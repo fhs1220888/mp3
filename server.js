@@ -38,7 +38,7 @@ app.use(bodyParser.json());
 
 // Use routes as a module (see index.js)
 require('./routes')(app, router);
-
+console.log("✅ Routes loaded");
 // Start the server
 app.get('/', (req, res) => {
     res.json({ message: 'Llama.io API running! 🚀' });
