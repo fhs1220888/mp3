@@ -8,8 +8,8 @@ router.get('/', async (req, res) => {
     try {
         let query = Task.find();
 
-        if (req.query.where) {
-            const whereObj = JSON.parse(req.query.where);
+        if (req.query.where || req.query.filter) {
+            const whereObj = JSON.parse(req.query.where || req.query.filter);
             query = query.find(whereObj);
         }
         if (req.query.sort) {
@@ -52,7 +52,7 @@ router.get('/:id', async (req, res) => {
         }
         res.status(200).json({ message: 'OK', data: task });
     } catch (err) {
-        res.status(500).json({ message: 'Server error', data: err });
+        res.status(500).json({ message: 'Server error', data: err.message });
     }
 });
 

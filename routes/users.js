@@ -5,38 +5,28 @@ var User = require('../models/user');
 // -------------------- GET /api/users --------------------
 router.get('/', async (req, res) => {
     try {
-        let query = User.find();
 
-        if (req.query.where) {
-            const whereObj = JSON.parse(req.query.where);
-            query = query.find(whereObj);
-        }
-        if (req.query.sort) {
-            const sortObj = JSON.parse(req.query.sort);
-            query = query.sort(sortObj);
-        }
-        if (req.query.select) {
-            const selectObj = JSON.parse(req.query.select);
-            query = query.select(selectObj);
-        }
-        if (req.query.skip) {
-            query = query.skip(parseInt(req.query.skip));
-        }
-        if (req.query.limit) {
-            query = query.limit(parseInt(req.query.limit));
-        }
+        const whereParam = req.query.where || req.query.filter;
+        const where = whereParam ? JSON.parse(whereParam) : {};
 
-        if (req.query.count && req.query.count === "true") {
-            const count = await query.countDocuments();
-            return res.status(200).json({ message: 'OK', data: count });
+        const sort = req.query.sort ? JSON.parse(req.query.sort) : {};
+        const select = req.query.select ? JSON.parse(req.query.select) : {};
+        const skip = req.query.skip ? parseInt(req.query.skip) : 0;
+        const limit = req.query.limit ? parseInt(req.query.limit) : 0;
+        const count = req.query.count === 'true';
+
+        if (count) {
+            const result = await User.countDocuments(where);
+            res.status(200).json({ message: 'OK', data: result });
         } else {
-            const users = await query.exec();
-            return res.status(200).json({ message: 'OK', data: users });
+            const result = await User.find(where).sort(sort).select(select).skip(skip).limit(limit);
+            res.status(200).json({ message: 'OK', data: result });
         }
     } catch (err) {
-        res.status(400).json({ message: 'Bad request', data: err });
+        res.status(500).json({ message: 'Server error', data: err });
     }
 });
+
 
 // -------------------- POST /api/users --------------------
 router.post('/', async (req, res) => {
