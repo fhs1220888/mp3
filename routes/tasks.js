@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
-var Task = require('../models/Task');
-var User = require('../models/User');
+var Task = require('../models/task');
+var User = require('../models/user');
 
 // -------------------- GET /api/tasks --------------------
 router.get('/', async (req, res) => {
