@@ -52,6 +52,9 @@ router.get('/:id', async (req, res) => {
         }
         res.status(200).json({ message: 'OK', data: task });
     } catch (err) {
+        if (err.name === 'CastError') {
+            return res.status(400).json({ message: 'Invalid ID format', data: err });
+        }
         res.status(500).json({ message: 'Server error', data: err.message });
     }
 });

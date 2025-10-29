@@ -56,6 +56,9 @@ router.get('/:id', async (req, res) => {
         if (!user) return res.status(404).json({ message: 'User not found', data: {} });
         res.status(200).json({ message: 'OK', data: user });
     } catch (err) {
+        if (err.name === 'CastError') {
+            return res.status(400).json({ message: 'Invalid ID format', data: err });
+        }
         res.status(500).json({ message: 'Server error', data: err });
     }
 });
