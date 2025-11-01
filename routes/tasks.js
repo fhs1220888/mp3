@@ -3,7 +3,7 @@ var router = express.Router();
 var Task = require('../models/task');
 var User = require('../models/user');
 
-// -------------------- GET /api/tasks --------------------
+// GET /api/tasks
 router.get('/', async (req, res) => {
     try {
         let query = Task.find();
@@ -43,7 +43,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// -------------------- GET /api/tasks/:id --------------------
+// GET /api/tasks/:id
 router.get('/:id', async (req, res) => {
     try {
         const task = await Task.findById(req.params.id);
@@ -59,7 +59,7 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// -------------------- POST /api/tasks --------------------
+// POST /api/tasks
 router.post('/', async (req, res) => {
     try {
         const newTask = new Task(req.body);
@@ -79,7 +79,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-// -------------------- PUT /api/tasks/:id --------------------
+// PUT /api/tasks/:id
 router.put('/:id', async (req, res) => {
     try {
         const oldTask = await Task.findById(req.params.id);
@@ -109,7 +109,7 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// -------------------- DELETE /api/tasks/:id --------------------
+// DELETE /api/tasks/:id
 router.delete('/:id', async (req, res) => {
     try {
         const task = await Task.findByIdAndDelete(req.params.id);

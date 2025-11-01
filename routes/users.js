@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 var User = require('../models/user');
 
-// -------------------- GET /api/users --------------------
+// GET /api/users
 router.get('/', async (req, res) => {
     try {
 
@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
 });
 
 
-// -------------------- POST /api/users --------------------
+// POST /api/users
 router.post('/', async (req, res) => {
     try {
 
@@ -49,7 +49,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-// -------------------- GET /api/users/:id --------------------
+// GET /api/users/:id
 router.get('/:id', async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
@@ -63,7 +63,7 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// -------------------- PUT /api/users/:id --------------------
+// PUT /api/users/:id
 router.put('/:id', async (req, res) => {
     try {
         if (req.body.email) {
@@ -82,7 +82,7 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// -------------------- DELETE /api/users/:id --------------------
+// DELETE /api/users/:id
 router.delete('/:id', async (req, res) => {
     try {
         const user = await User.findById(req.params.id);

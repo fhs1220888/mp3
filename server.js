@@ -18,8 +18,8 @@ mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
-    .then(() => console.log("✅ Connected to MongoDB"))
-    .catch(err => console.error("❌ MongoDB connection error:", err));
+    .then(() => console.log("Connected to MongoDB"))
+    .catch(err => console.error("MongoDB connection error:", err));
 
 // Allow CORS so that backend and frontend could be put on different servers
 var allowCrossDomain = function (req, res, next) {
@@ -38,10 +38,10 @@ app.use(bodyParser.json());
 
 // Use routes as a module (see index.js)
 require('./routes')(app, router);
-console.log("✅ Routes loaded");
+console.log("Routes loaded");
 // Start the server
 app.get('/', (req, res) => {
-    res.json({ message: 'Llama.io API running! 🚀' });
+    res.json({ message: 'CS409 MP3 API running.' });
 });
 app.listen(port);
 console.log('Server running on port ' + port);
