@@ -5,27 +5,52 @@ var User = require('../models/user');
 // GET /api/users
 router.get('/', async (req, res) => {
     try {
-
-        const whereParam = req.query.where || req.query.filter;
-        const where = whereParam ? JSON.parse(whereParam) : {};
-
-        const sort = req.query.sort ? JSON.parse(req.query.sort) : {};
-        const select = req.query.select ? JSON.parse(req.query.select) : {};
-        const skip = req.query.skip ? parseInt(req.query.skip) : 0;
-        const limit = req.query.limit ? parseInt(req.query.limit) : 0;
-        const count = req.query.count === 'true';
-
-        if (count) {
-            const result = await User.countDocuments(where);
-            res.status(200).json({ message: 'OK', data: result });
-        } else {
-            const result = await User.find(where).sort(sort).select(select).skip(skip).limit(limit);
-            res.status(200).json({ message: 'OK', data: result });
+        let query = User.find();
+        if (req.query.where) {
+            try {
+                const whereObj = JSON.parse(req.query.where);
+                query = query.find(whereObj);
+            } catch (e) {
+                return res.status(400).json({ message: 'Invalid JSON in where parameter', data: {} });
+            }
         }
+
+        if (req.query.filter) {
+            try {
+                const filterObj = JSON.parse(req.query.filter);
+                query = query.select(filterObj);
+            } catch (e) {
+                return res.status(400).json({ message: 'Invalid JSON in filter parameter', data: {} });
+            }
+        }
+
+        if (req.query.sort) {
+            const sortObj = JSON.parse(req.query.sort);
+            query = query.sort(sortObj);
+        }
+
+        if (req.query.select) {
+            const selectObj = JSON.parse(req.query.select);
+            query = query.select(selectObj);
+        }
+
+        if (req.query.skip) query = query.skip(parseInt(req.query.skip));
+        if (req.query.limit) query = query.limit(parseInt(req.query.limit));
+
+        if (req.query.count === 'true') {
+            const count = await query.countDocuments();
+            return res.status(200).json({ message: 'OK', data: count });
+        }
+
+        const users = await query.exec();
+        res.status(200).json({ message: 'OK', data: users });
+
     } catch (err) {
-        res.status(500).json({ message: 'Server error', data: err });
+        console.error('User GET error:', err);
+        res.status(400).json({ message: 'Bad request', data: err.message });
     }
 });
+
 
 
 // POST /api/users
@@ -88,15 +113,15 @@ router.delete('/:id', async (req, res) => {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ message: 'User not found', data: {} });
 
-        const Task = require('../models/Task');
+        const Task = require('../models/task');
+        // Unassign all tasks assigned to this user
         await Task.updateMany(
-            { assignedUser: user._id.toString() },
+            { assignedUser: req.params.id },
             { assignedUser: "", assignedUserName: "unassigned" }
         );
 
         await user.deleteOne();
-
-        res.status(204).json({ message: 'User deleted and tasks unassigned', data: {} });
+        res.status(204).end();
     } catch (err) {
         res.status(500).json({ message: 'Server error', data: err });
     }

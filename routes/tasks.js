@@ -8,10 +8,16 @@ router.get('/', async (req, res) => {
     try {
         let query = Task.find();
 
-        if (req.query.where || req.query.filter) {
-            const whereObj = JSON.parse(req.query.where || req.query.filter);
+        if (req.query.where) {
+            const whereObj = JSON.parse(req.query.where);
             query = query.find(whereObj);
         }
+
+        if (req.query.filter) {
+            const filterObj = JSON.parse(req.query.filter);
+            query = query.select(filterObj);
+        }
+
         if (req.query.sort) {
             const sortObj = JSON.parse(req.query.sort);
             query = query.sort(sortObj);
@@ -20,28 +26,22 @@ router.get('/', async (req, res) => {
             const selectObj = JSON.parse(req.query.select);
             query = query.select(selectObj);
         }
-        if (req.query.skip) {
-            query = query.skip(parseInt(req.query.skip));
-        }
-
-        if (req.query.limit) {
-            query = query.limit(parseInt(req.query.limit));
-        } else {
-            query = query.limit(100);
-        }
+        if (req.query.skip) query = query.skip(parseInt(req.query.skip));
+        if (req.query.limit) query = query.limit(parseInt(req.query.limit));
 
         if (req.query.count && req.query.count === "true") {
             const count = await query.countDocuments();
             return res.status(200).json({ message: 'OK', data: count });
         } else {
             const tasks = await query.exec();
-            return res.status(200).json({ message: 'OK', data: tasks });
+            return res.status(200).json({ message: 'OK', data: tasks || [] });
         }
 
     } catch (err) {
         res.status(400).json({ message: 'Bad request', data: err });
     }
 });
+
 
 // GET /api/tasks/:id
 router.get('/:id', async (req, res) => {
@@ -61,44 +61,61 @@ router.get('/:id', async (req, res) => {
 
 // POST /api/tasks
 router.post('/', async (req, res) => {
+    const session = await User.startSession();
+    session.startTransaction();
     try {
         const newTask = new Task(req.body);
-        const savedTask = await newTask.save();
+        const savedTask = await newTask.save({ session });
 
         if (savedTask.assignedUser) {
-            const user = await User.findById(savedTask.assignedUser);
-            if (user) {
-                user.pendingTasks.push(savedTask._id.toString());
-                await user.save();
-            }
+            await User.findByIdAndUpdate(
+                savedTask.assignedUser,
+                { $addToSet: { pendingTasks: savedTask._id.toString() } },
+                { session }
+            );
         }
 
+        await session.commitTransaction();
+        session.endSession();
         res.status(201).json({ message: 'Task created', data: savedTask });
     } catch (err) {
+        await session.abortTransaction();
+        session.endSession();
         res.status(400).json({ message: 'Bad request', data: err });
     }
 });
+
 
 // PUT /api/tasks/:id
 router.put('/:id', async (req, res) => {
     try {
         const oldTask = await Task.findById(req.params.id);
-        if (!oldTask) return res.status(404).json({ message: 'Task not found', data: {} });
+        if (!oldTask)
+            return res.status(404).json({ message: 'Task not found', data: {} });
 
+        // Remove from old user's pendingTasks if needed
         if (oldTask.assignedUser) {
             const oldUser = await User.findById(oldTask.assignedUser);
             if (oldUser) {
-                oldUser.pendingTasks = oldUser.pendingTasks.filter(tid => tid !== oldTask._id.toString());
+                oldUser.pendingTasks = oldUser.pendingTasks.filter(
+                    (tid) => tid !== oldTask._id.toString()
+                );
+                oldUser.pendingTasks = [...new Set(oldUser.pendingTasks)];
                 await oldUser.save();
             }
         }
-        const updatedTask = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        // Update task itself
+        const updatedTask = await Task.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+            runValidators: true,
+        });
 
-
+        // Add to new user
         if (updatedTask.assignedUser) {
             const newUser = await User.findById(updatedTask.assignedUser);
-            if (newUser && !newUser.pendingTasks.includes(updatedTask._id.toString())) {
+            if (newUser) {
                 newUser.pendingTasks.push(updatedTask._id.toString());
+                newUser.pendingTasks = [...new Set(newUser.pendingTasks)];
                 await newUser.save();
             }
         }
@@ -123,7 +140,7 @@ router.delete('/:id', async (req, res) => {
             }
         }
 
-        res.status(204).json({ message: 'Task deleted', data: {} });
+        res.status(204).end();
     } catch (err) {
         res.status(500).json({ message: 'Server error', data: err });
     }
